@@ -30,6 +30,7 @@ from decimal import Decimal
 from service.models import Product, Category, db
 from service import app
 from tests.factories import ProductFactory
+logger = logging.getLogger("test_models")
 
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql://postgres:postgres@localhost:5432/postgres"
@@ -59,6 +60,7 @@ class TestProductModel(unittest.TestCase):
 
     def setUp(self):
         """This runs before each test"""
+        logging.getLogger('faker').setLevel(logging.ERROR)
         db.session.query(Product).delete()  # clean up the last tests
         db.session.commit()
 
@@ -104,3 +106,178 @@ class TestProductModel(unittest.TestCase):
     #
     # ADD YOUR TEST CASES HERE
     #
+
+    def test_read_a_product(self):
+        """Test reading a product"""
+        seed_product = ProductFactory()
+        logger.info("Creating product: %s", seed_product)
+
+        seed_product.id = None
+        seed_product.create()
+
+        self.assertIsNotNone(seed_product.id)
+
+        product = Product.find(seed_product.id)
+
+        self.assertEqual(product.id, seed_product.id)
+        self.assertEqual(product.name, seed_product.name)
+        self.assertEqual(product.description, seed_product.description)
+        self.assertEqual(product.price, seed_product.price)
+        self.assertEqual(product.available, seed_product.available)
+        self.assertEqual(product.category, seed_product.category)
+
+    def test_update_a_product(self):
+        """Test reading a product"""
+        seed_product = ProductFactory()
+        logger.info("Creating product: %s", seed_product)
+
+        seed_product.id = None
+        seed_product.create()
+
+        self.assertIsNotNone(seed_product.id)
+
+        logger.info("Created product: %s", seed_product)
+
+        seed_product.description = "foo"
+        old_id = seed_product.id
+
+        seed_product.update()
+
+        self.assertEqual(seed_product.id, old_id)
+        self.assertEqual(seed_product.description, "foo")
+
+        products = Product.all()
+        self.assertEqual(len(products), 1)
+        self.assertEqual(products[0].id, old_id)
+        self.assertEqual(products[0].description, seed_product.description)
+
+    def test_delete_a_product(self):
+        """Test deleting a product"""
+        seed_product = ProductFactory()
+        logger.info("Creating product: %s", seed_product)
+        seed_product.create()
+
+        products = Product.all()
+        self.assertEqual(len(products), 1)
+
+        seed_product.delete()
+
+        products = Product.all()
+        self.assertEqual(len(products), 0)
+
+    def test_list_all_products(self):
+        """Test listing all products"""
+        products = Product.all()
+        self.assertEqual(len(products), 0)
+
+        for _ in range(5):
+            seed_product = ProductFactory()
+            seed_product.create()
+
+        products = Product.all()
+        self.assertEqual(len(products), 5)
+
+    def test_find_product_by_name(self):
+        """Test finding a product by name"""
+        products = Product.all()
+        self.assertEqual(len(products), 0)
+
+        num = 5
+        for _ in range(num):
+            seed_product = ProductFactory()
+            seed_product.create()
+
+        products = Product.all()
+        self.assertEqual(len(products), num)
+
+        find_name = products[0].name
+        count = sum(1 for product in products if product.name == find_name)
+
+        found_products = Product.find_by_name(find_name)
+        self.assertEqual(found_products.count(), count)
+        for product in found_products:
+            self.assertEqual(product.name, find_name)
+
+    def test_find_product_by_availability(self):
+        """Test finding a product by availability"""
+        products = Product.all()
+        self.assertEqual(len(products), 0)
+
+        num = 10
+        for _ in range(num):
+            seed_product = ProductFactory()
+            seed_product.create()
+
+        products = Product.all()
+        self.assertEqual(len(products), num)
+
+        find_available = products[0].available
+        count = sum(1 for product in products if product.available == find_available)
+
+        found_products = Product.find_by_availability(find_available)
+        self.assertEqual(found_products.count(), count)
+        for product in found_products:
+            self.assertEqual(product.available, find_available)
+
+    def test_find_product_by_category(self):
+        """Test finding a product by category"""
+        products = Product.all()
+        self.assertEqual(len(products), 0)
+
+        num = 10
+        for _ in range(num):
+            seed_product = ProductFactory()
+            seed_product.create()
+
+        products = Product.all()
+        self.assertEqual(len(products), num)
+
+        find_category = products[0].category
+        count = sum(1 for product in products if product.category == find_category)
+
+        found_products = Product.find_by_category(find_category)
+        self.assertEqual(found_products.count(), count)
+        for product in found_products:
+            self.assertEqual(product.category, find_category)
+
+    def test_find_product_by_price(self):
+        """Test finding a product by price"""
+        products = Product.all()
+        self.assertEqual(len(products), 0)
+
+        num = 10
+        for _ in range(num):
+            seed_product = ProductFactory()
+            seed_product.create()
+
+        products = Product.all()
+        self.assertEqual(len(products), num)
+
+        find_price = products[0].price
+        count = sum(1 for product in products if product.price == find_price)
+
+        found_products = Product.find_by_price(find_price)
+        self.assertEqual(found_products.count(), count)
+        for product in found_products:
+            self.assertEqual(product.price, find_price)
+
+    def test_find_product_by_string_price(self):
+        """Test finding a product by price"""
+        products = Product.all()
+        self.assertEqual(len(products), 0)
+
+        num = 10
+        for _ in range(num):
+            seed_product = ProductFactory()
+            seed_product.create()
+
+        products = Product.all()
+        self.assertEqual(len(products), num)
+
+        find_price = products[0].price
+        count = sum(1 for product in products if product.price == find_price)
+
+        found_products = Product.find_by_price(str(find_price))
+        self.assertEqual(found_products.count(), count)
+        for product in found_products:
+            self.assertEqual(product.price, find_price)
